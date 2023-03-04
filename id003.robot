@@ -1,44 +1,95 @@
 *** Settings ***
 Library             SeleniumLibrary
-Library             Collections    #Enabling list creation and working on the lists.
 Test Setup          Open Webpage
 Test Teardown       Close Webpage
 Suite Setup         Set Selenium Speed      0.5    #Changing the speed of test execution
 
 *** Variables ***
 
-${title}                    xpath:(//*[@class="rt-resizable-header-content"])[2]
-${table_title_element}      xpath://*[@class="rt-td"]/*[@class="action-buttons"]
+${login_button}                     xpath://*[@id="login"]
+${user_name}                        xpath://*[@id="userName"]
+${password}                         xpath://*[@id="password"]
+${user_name_to_populate}            aabb
+${password_to_populate}             M3cybefidy!
+${user_name_value}                  xpath://*[@id="userName-value"]
+${book1}                            xpath://*[@id="see-book-Git Pocket Guide"]
+${add_to_your_collection_button}    xpath:(//*[@class="text-right fullButton"]/*[@id="addNewRecordButton"])
+${message_with_second_book}         Book already present in the your collection!
+${message_with_add_book}            Book added to your collection.
+${login_info}                       Login
+${book_title}                       Git Pocket Guide
+${profile_text}                     Profile
+${profile}                          xpath://*[contains(text(),'Profile')]
+${delete_books}                     xpath:(//*[@class="text-right button di"]/*[@id="submit"])
+${confirm}                          xpath://*[@id="closeSmallModal-ok"]
 
 *** Test Cases ***
-Verification of book sorting functionality
+Add Book Test
     Check If Page Is Loaded
-    Click Title Column
-    Check Order
+    Click Login Button
+    Fill In UserName
+    Fill In Password
+    Click Login Button
+    Click On Book
+    Add Book
+    Add Book Second Time
 
 *** Keywords ***
 Open Webpage
     Open Browser                https://demoqa.com/books        chrome
     Maximize Browser Window
 
+Click Login Button
+    Click Button    ${login_button}
+
 Check If Page Is Loaded
     Wait Until Page Contains    Book Store
 
-Click Title Column
-    Click Element    ${title}
+Check If Page Is Loaded With Argument ${title}
+    Wait Until Page Contains    ${title}
 
-Check Order
-    @{list_web_elements} =       Get WebElements     ${table_title_element}
-       ${list} =  Create List
-    FOR     ${book}  IN  @{list_web_elements}
-        Append To List    ${list}    ${book.text}
-    END
+Fill In UserName
+    Check If Page Is Loaded With Argument ${login_info}
+    Click Element    ${user_name}
+    Input Text    ${user_name}    ${user_name_to_populate}
 
-    ${sorted_list} =  Copy List  ${list}
-    Sort List   ${sorted_list}
-    Log To Console      ${sorted_list}
-    Lists Should Be Equal     ${sorted_list}    ${list}
+Fill In Password
+    Click Element    ${password}
+    Input Text    ${password}    ${password_to_populate}
+
+Check Expected Result
+    Check If Page Is Loaded With Argument ${book_title}
+     ${output} =  Get WebElement  ${user_name_value}
+     Log To Console    ${output.text}
+     Should Match     ${output.text}    ${user_name_to_populate}
+
+Click On Book
+    Check If Page Is Loaded With Argument ${book_title}
+    Click Element    ${book1}
+
+Add Book
+    Check If Page Is Loaded With Argument ${book_title}
+    execute javascript    window.scrollTo(0,500)
+    Click Button    ${add_to_your_collection_button}
+    ${message}=  Handle Alert  action=accept
+    Log To Console     ${message}
+    Should Match    ${message_with_add_book}  ${message}
+
+Add Book Second Time
+    Check If Page Is Loaded With Argument ${book_title}
+    Click Button    ${add_to_your_collection_button}
+    ${message}=  Handle Alert  action=accept
+    Log To Console     ${message}
+    Should Match    ${message_with_second_book}  ${message}
+
+Remove book if exist
+    click element    ${profile}
+    Check If Page Is Loaded With Argument ${profile_text}
+    execute javascript    window.scrollTo(0,500)
+    Click Button    ${delete_books}
+    Click Button    ${confirm}
+    Handle Alert  action=accept
 
 Close Webpage
+    Remove book if exist
     Close Browser
-
